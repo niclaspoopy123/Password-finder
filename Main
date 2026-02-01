@@ -1026,7 +1026,7 @@ local function openSearchPanel()
             end
 
             if not ok or not parsed or not parsed.results or not parsed.results.leakcheck then
-                terminalLog("Invalid API response structure for: " .. searchTerm, "error")
+                terminalLog("Invalid API response structure for: " .. searchTerm .. " - missing expected fields", "error")
                 displaySearchResults({found=0}, searchTerm)
             else
                 terminalLog("Search complete: " .. searchTerm, "info")
