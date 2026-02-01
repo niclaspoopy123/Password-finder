@@ -75,6 +75,14 @@ local function trim(s)
     return s:match('^%s*(.*%S)') or ''
 end
 
+-- Helper function to detect IP addresses in text
+local function extractIPAddress(text)
+    if not text or text == "" then return nil end
+    -- Pattern to match IPv4 addresses
+    local ip = text:match("(%d+%.%d+%.%d+%.%d+)")
+    return ip
+end
+
 -- Helper function for smooth color transitions
 local function tweenColor(instance, color)
     TweenService:Create(instance, TweenInfo.new(0.15), { BackgroundColor3 = color }):Play()
@@ -541,6 +549,8 @@ local function openUserInfoTab(username)
         makeInfoLineWithCopy("Username", entry.username or "N/A", Theme.Text)
         makeInfoLineWithCopy("Password", entry.password or "N/A", Theme.Red)
         makeInfoLineWithCopy("Email", entry.email or "N/A", Theme.Green)
+        makeInfoLineWithCopy("Name", entry.name or "N/A", Color3.fromRGB(255, 200, 100))
+        makeInfoLineWithCopy("IP Address", entry.ip or entry.ip_address or "N/A", Color3.fromRGB(100, 200, 255))
         makeInfoLineWithCopy("Origin", originStr or "N/A", Theme.Accent)
         makeDivider()
     end
@@ -595,11 +605,14 @@ local function openInfoTab()
     makeTitle("SCANNING MODULE")
     makeLine("• Live User Scanning provides real-time leak checks for players joining the server.", Theme.Text)
     makeLine("• Auto Scan (SCAN: ON) enables continuous checking and rescan attempts.", Theme.Text)
+    makeLine("• Enhanced detection now includes IP addresses, real names, emails, and passwords.", Color3.fromRGB(100, 200, 255))
     makeLine("• Results may not be 100% accurate, but data with 'roblox' origin is verified and guaranteed real.", Color3.fromRGB(255, 200, 0))
 
     makeTitle("SEARCH & DEEPER INFORMATION")
     makeLine("Search Tab is for getting more information about them; searching more and more will lead you to deeper informations.", Theme.Accent)
     makeLine("You can manually query the database using usernames, emails, or passwords.", Theme.Text)
+    makeLine("• 👤 = Username   🔑 = Password   📧 = Email", Theme.Text)
+    makeLine("• 👨 = Real Name   🌐 = IP Address   📍 = Source/Origin", Theme.Text)
     
     makeTitle("COPYRIGHT & SUPPORT")
     makeLine("© 2024 Kryptonite Team (lol no). Leaked by Stalkie.", Theme.ScanGray)
@@ -908,6 +921,8 @@ local function openSearchPanel()
                 makeSearchDataLineWithCopy(recordFrame, "  👤 User: ", entry.username or "N/A", Theme.Text)
                 makeSearchDataLineWithCopy(recordFrame, "  🔑 Pass: ", entry.password or "N/A", Theme.Red)
                 makeSearchDataLineWithCopy(recordFrame, "  📧 Email: ", entry.email or "N/A", Theme.Green)
+                makeSearchDataLineWithCopy(recordFrame, "  👨 Name: ", entry.name or "N/A", Color3.fromRGB(255, 200, 100))
+                makeSearchDataLineWithCopy(recordFrame, "  🌐 IP: ", entry.ip or entry.ip_address or "N/A", Color3.fromRGB(100, 200, 255))
                 
                 local originStr = table.concat(entry.origin or {}, ", ")
                 if originStr == "" and entry.source and entry.source.name then
@@ -1068,6 +1083,26 @@ local function addLeakedUser(entry)
         end)
         
         terminalLog("⚠ LEAK DETECTED: " .. lower, "leak")
+        
+        -- Log detailed info about what was leaked
+        local leakedItems = {}
+        if entry.password and entry.password ~= "" and entry.password ~= "N/A" then
+            table.insert(leakedItems, "password")
+        end
+        if entry.email and entry.email ~= "" and entry.email ~= "N/A" then
+            table.insert(leakedItems, "email")
+        end
+        if entry.name and entry.name ~= "" and entry.name ~= "N/A" then
+            table.insert(leakedItems, "name")
+        end
+        local ipValue = entry.ip or entry.ip_address
+        if ipValue and ipValue ~= "" and ipValue ~= "N/A" then
+            table.insert(leakedItems, "IP")
+        end
+        
+        if #leakedItems > 0 then
+            terminalLog("  └─ Found: " .. table.concat(leakedItems, ", "), "info")
+        end
     end
 
     table.insert(usersWithLogs[lower], entry)
@@ -1130,7 +1165,7 @@ local function setLeakedESP(plr)
     local bg = Instance.new("BillboardGui")
     bg.Name = "Kryptonite_LeakTag"
     bg.Adornee = plr.Character:FindFirstChild("Head") or plr.Character:FindFirstChild("HumanoidRootPart")
-    bg.Size = UDim2.new(0, 120, 0, 25)
+    bg.Size = UDim2.new(0, 160, 0, 40)
     bg.StudsOffset = Vector3.new(0, 2.5, 0)
     bg.AlwaysOnTop = true
     bg.Parent = plr.Character
@@ -1143,6 +1178,13 @@ local function setLeakedESP(plr)
     lbl.Text = "[LEAKED] " .. plr.Name
     lbl.TextScaled = true
     lbl.TextStrokeTransparency = 0.6
+    
+    -- Add leak count indicator
+    local lower = plr.Name:lower()
+    if usersWithLogs[lower] then
+        local count = #usersWithLogs[lower]
+        lbl.Text = "[LEAKED x" .. count .. "] " .. plr.Name
+    end
 end
 
 -- HTTP scan (for in-game players)
@@ -1195,6 +1237,19 @@ local function scanUser(username)
             if ent.source and ent.source.name and tostring(ent.source.name):find("%.") then
                 ent.origin = ent.origin or {}
                 table.insert(ent.origin, tostring(ent.source.name):lower())
+            end
+            
+            -- Extract IP from other fields if not present
+            if not ent.ip and not ent.ip_address then
+                for _, field in ipairs({"email", "password", "username"}) do
+                    if ent[field] then
+                        local extractedIP = extractIPAddress(tostring(ent[field]))
+                        if extractedIP then
+                            ent.ip = extractedIP
+                            break
+                        end
+                    end
+                end
             end
             
             addLeakedUser(ent)
