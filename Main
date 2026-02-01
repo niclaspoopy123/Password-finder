@@ -55,18 +55,18 @@ local isDragging = false
 local dragStartPos = nil
 local miniFrame = nil
 
---// THEME (GÜNCELLENMİŞ)
+--// THEME (ENHANCED with better contrast)
 local Theme = {
     MainBG = Color3.fromRGB(18, 18, 28),
     PanelBG = Color3.fromRGB(25, 25, 40),
-    Accent = Color3.fromRGB(0, 200, 255),
+    Accent = Color3.fromRGB(0, 220, 255),
     Red = Color3.fromRGB(255, 80, 100),
     Green = Color3.fromRGB(0, 255, 180),
-    Text = Color3.fromRGB(235, 235, 255),
-    Outline = Color3.fromRGB(0, 140, 200),
-    Button = Color3.fromRGB(35, 35, 50),
-    Hover = Color3.fromRGB(50, 50, 70),
-    ScanGray = Color3.fromRGB(150, 150, 180),
+    Text = Color3.fromRGB(245, 245, 255),
+    Outline = Color3.fromRGB(0, 180, 240),
+    Button = Color3.fromRGB(40, 40, 60),
+    Hover = Color3.fromRGB(60, 60, 85),
+    ScanGray = Color3.fromRGB(160, 160, 190),
     TerminalBG = Color3.fromRGB(10, 10, 20),
 }
 
@@ -131,14 +131,14 @@ end)
 local mainCorner = Instance.new("UICorner", Main)
 mainCorner.CornerRadius = UDim.new(0, 12)
 
--- Animate open (GÜNCELLENMİŞ - Elastic)
+-- Animate open (GÜNCELLENMİŞ - Elastic) - INCREASED SIZE FOR BETTER READABILITY
 task.delay(0.1, function()
-    local goal = { Size = UDim2.new(0, 720, 0, 460), BorderColor3 = Theme.Accent }
+    local goal = { Size = UDim2.new(0, 820, 0, 520), BorderColor3 = Theme.Accent }
     local tween = TweenService:Create(Main, TweenInfo.new(0.7, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), goal)
     tween:Play()
 end)
 
--- Header
+-- Header (ENHANCED)
 local Header = Instance.new("TextLabel", Main)
 Header.Size = UDim2.new(1, 0, 0, 40)
 Header.Position = UDim2.new(0, 0, 0, 0)
@@ -146,7 +146,7 @@ Header.Text = "KRYPTONITE"
 Header.TextColor3 = Theme.Accent
 Header.BackgroundTransparency = 1
 Header.Font = Enum.Font.SciFi
-Header.TextSize = 30 -- Slightly larger
+Header.TextSize = 32
 
 local SubHeader = Instance.new("TextLabel", Main)
 SubHeader.Size = UDim2.new(0, 200, 0, 20)
@@ -186,38 +186,38 @@ StatusLabel.TextSize = 13
 StatusLabel.Visible = false
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Search Button (GÜNCELLENMİŞ Esthetics)
+-- Search Button (ENHANCED with better styling)
 local SearchTabButton = Instance.new("TextButton", Main)
-SearchTabButton.Size = UDim2.new(0, 100, 0, 28)
+SearchTabButton.Size = UDim2.new(0, 110, 0, 32)
 SearchTabButton.Position = UDim2.new(0, 10, 0, 5)
-SearchTabButton.Text = "SEARCH"
+SearchTabButton.Text = "🔍 SEARCH"
 SearchTabButton.TextColor3 = Theme.Text
-SearchTabButton.BackgroundColor3 = Theme.Button
+SearchTabButton.BackgroundColor3 = Theme.Accent
 SearchTabButton.Font = Enum.Font.GothamBold
-SearchTabButton.TextSize = 14
+SearchTabButton.TextSize = 15
 SearchTabButton.AutoButtonColor = false
 local searchCorner = Instance.new("UICorner", SearchTabButton)
 searchCorner.CornerRadius = UDim.new(0, 8)
 local searchStroke = Instance.new("UIStroke", SearchTabButton)
 searchStroke.Color = Theme.Outline
-searchStroke.Thickness = 1
+searchStroke.Thickness = 2
 searchStroke.Transparency = 0.5
 SearchTabButton.MouseEnter:Connect(function() tweenColor(SearchTabButton, Theme.Hover) end)
-SearchTabButton.MouseLeave:Connect(function() tweenColor(SearchTabButton, Theme.Button) end)
+SearchTabButton.MouseLeave:Connect(function() tweenColor(SearchTabButton, Theme.Accent) end)
 
 
--- 🌟 Auto Scan Toggle Button (GÜNCELLENMİŞ)
+-- 🌟 Auto Scan Toggle Button (ENHANCED)
 local AutoScanButton = Instance.new("TextButton", Main)
-AutoScanButton.Size = UDim2.new(0, 100, 0, 28)
-AutoScanButton.Position = UDim2.new(0, 115, 0, 5)
+AutoScanButton.Size = UDim2.new(0, 110, 0, 32)
+AutoScanButton.Position = UDim2.new(0, 125, 0, 5)
 AutoScanButton.TextColor3 = Theme.Text
 AutoScanButton.Font = Enum.Font.GothamBold
-AutoScanButton.TextSize = 14
+AutoScanButton.TextSize = 15
 AutoScanButton.AutoButtonColor = false
 local autoScanCorner = Instance.new("UICorner", AutoScanButton)
 autoScanCorner.CornerRadius = UDim.new(0, 8)
 local autoScanStroke = Instance.new("UIStroke", AutoScanButton)
-autoScanStroke.Thickness = 1
+autoScanStroke.Thickness = 2
 autoScanStroke.Transparency = 0.5
 
 -- Buton rengini ve metnini güncelleyen yardımcı fonksiyon (Tweenli)
@@ -650,7 +650,8 @@ local function openSearchPanel()
         return lbl
     end
 
-    makeStaticLogLine("[INFO] Enter search term below. Use only one field.", Theme.Green)
+    makeStaticLogLine("[INFO] Enter search term below. Search is comprehensive and checks all databases.", Theme.Green)
+    makeStaticLogLine("[TIP] Use Email/Username for account lookups, Password for breach searches.", Theme.Accent)
     
     -- Email / Username Input
     local EmailInputFrame = Instance.new("Frame", SearchHeaderFrame)
@@ -673,7 +674,7 @@ local function openSearchPanel()
     local EmailBox = Instance.new("TextBox", EmailInputFrame)
     EmailBox.Name = "EmailBox"
     EmailBox.Size = UDim2.new(1, -135, 1, 0)
-    EmailBox.PlaceholderText = "Email or Username..."
+    EmailBox.PlaceholderText = "e.g., user@example.com, username123"
     EmailBox.PlaceholderColor3 = Theme.ScanGray
     EmailBox.BackgroundColor3 = Theme.Button
     EmailBox.TextColor3 = Theme.Text
@@ -705,7 +706,7 @@ local function openSearchPanel()
     local PasswordBox = Instance.new("TextBox", PassInputFrame)
     PasswordBox.Name = "PasswordBox"
     PasswordBox.Size = UDim2.new(1, -135, 1, 0)
-    PasswordBox.PlaceholderText = "Enter password to search..."
+    PasswordBox.PlaceholderText = "e.g., password123, MyP@ssw0rd"
     PasswordBox.PlaceholderColor3 = Theme.ScanGray
     PasswordBox.BackgroundColor3 = Theme.Button
     PasswordBox.TextColor3 = Theme.Text
@@ -716,30 +717,33 @@ local function openSearchPanel()
     Instance.new("UICorner", PasswordBox).CornerRadius = UDim.new(0, 5)
     PasswordBoxInput = PasswordBox
 
-    -- Run Button
+    -- Run Button (ENHANCED)
     local RunButtonFrame = Instance.new("Frame", SearchHeaderFrame)
     RunButtonFrame.Name = "RunButtonFrame"
-    RunButtonFrame.Size = UDim2.new(1, 0, 0, 26) 
+    RunButtonFrame.Size = UDim2.new(1, 0, 0, 32) 
     RunButtonFrame.BackgroundTransparency = 1
 
     local SearchRunButton = Instance.new("TextButton", RunButtonFrame)
     SearchRunButton.Name = "SearchRunButton"
-    SearchRunButton.Size = UDim2.new(0, 100, 1, 0)
-    SearchRunButton.Position = UDim2.new(0.5, -50, 0, 0)
-    SearchRunButton.Text = "RUN SEARCH"
+    SearchRunButton.Size = UDim2.new(0, 120, 1, 0)
+    SearchRunButton.Position = UDim2.new(0.5, -60, 0, 0)
+    SearchRunButton.Text = "🔎 RUN SEARCH"
     SearchRunButton.TextColor3 = Theme.Text
-    SearchRunButton.BackgroundColor3 = Theme.Accent
+    SearchRunButton.BackgroundColor3 = Theme.Green
     SearchRunButton.Font = Enum.Font.GothamBold
-    SearchRunButton.TextSize = 14
-    Instance.new("UICorner", SearchRunButton).CornerRadius = UDim.new(0, 5)
+    SearchRunButton.TextSize = 15
+    Instance.new("UICorner", SearchRunButton).CornerRadius = UDim.new(0, 6)
+    local runBtnStroke = Instance.new("UIStroke", SearchRunButton)
+    runBtnStroke.Color = Color3.fromRGB(0, 180, 120)
+    runBtnStroke.Thickness = 2
     SearchRunButton.AutoButtonColor = false
     SearchRunButton.MouseEnter:Connect(function() tweenColor(SearchRunButton, Theme.Hover) end)
-    SearchRunButton.MouseLeave:Connect(function() tweenColor(SearchRunButton, Theme.Accent) end)
+    SearchRunButton.MouseLeave:Connect(function() tweenColor(SearchRunButton, Theme.Green) end)
 
     makeStaticLogLine("──────────────────────────────────────────────", Theme.ScanGray)
     makeStaticLogLine("[LEAKED] RESULTS:", Theme.Red)
     
-    local SEARCH_HEADER_FIXED_HEIGHT = 164 
+    local SEARCH_HEADER_FIXED_HEIGHT = 176 
     SearchHeaderFrame.Size = UDim2.new(1, -10, 0, SEARCH_HEADER_FIXED_HEIGHT)
     
     local SEARCH_CONTENT_START_Y = 35 + SEARCH_HEADER_FIXED_HEIGHT
@@ -837,7 +841,7 @@ local function openSearchPanel()
             lbl.Parent = SearchTab
         end
 
-        SearchRunButton.Text = "RUN SEARCH"
+        SearchRunButton.Text = "🔎 RUN SEARCH"
         searchRunning = false
 
         if not results or results.found == 0 or not results.result then
@@ -939,13 +943,13 @@ local function openSearchPanel()
         end
 
         searchRunning = true
-        SearchRunButton.Text = "LOADING..."
+        SearchRunButton.Text = "⏳ SEARCHING..."
 
-        terminalLog("External search initiated: " .. searchTerm, "scan")
+        terminalLog("🔍 External search initiated: " .. searchTerm, "scan")
         local requestFn = syn and syn.request or http and http.request or request
         if not requestFn then
             terminalLog("HTTP unavailable.", "error")
-            SearchRunButton.Text = "RUN SEARCH"
+            SearchRunButton.Text = "🔎 RUN SEARCH"
             searchRunning = false
             return
         end
