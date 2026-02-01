@@ -83,14 +83,6 @@ local function extractIPAddress(text)
     return ip
 end
 
--- Helper function to detect if text contains a real name pattern
-local function looksLikeName(text)
-    if not text or text == "" or text == "N/A" then return false end
-    -- Check if it looks like a name (2+ parts with capital letters)
-    if text:match("^%u%l+%s+%u%l+") then return true end
-    return false
-end
-
 -- Helper function for smooth color transitions
 local function tweenColor(instance, color)
     TweenService:Create(instance, TweenInfo.new(0.15), { BackgroundColor3 = color }):Play()
@@ -1103,7 +1095,8 @@ local function addLeakedUser(entry)
         if entry.name and entry.name ~= "" and entry.name ~= "N/A" then
             table.insert(leakedItems, "name")
         end
-        if (entry.ip or entry.ip_address) and (entry.ip or entry.ip_address) ~= "" and (entry.ip or entry.ip_address) ~= "N/A" then
+        local ipValue = entry.ip or entry.ip_address
+        if ipValue and ipValue ~= "" and ipValue ~= "N/A" then
             table.insert(leakedItems, "IP")
         end
         
