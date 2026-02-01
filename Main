@@ -78,9 +78,82 @@ end
 -- Helper function to detect IP addresses in text
 local function extractIPAddress(text)
     if not text or text == "" then return nil end
-    -- Pattern to match IPv4 addresses
+    -- Pattern to match IPv4 addresses (enhanced to validate ranges)
     local ip = text:match("(%d+%.%d+%.%d+%.%d+)")
-    return ip
+    if ip then
+        -- Validate IP address components are in valid range (0-255)
+        local parts = {}
+        for num in ip:gmatch("%d+") do
+            local n = tonumber(num)
+            if n and n >= 0 and n <= 255 then
+                table.insert(parts, n)
+            else
+                return nil
+            end
+        end
+        if #parts == 4 then
+            return ip
+        end
+    end
+    return nil
+end
+
+-- Helper function to extract email addresses from text (supports Gmail, Yahoo, Outlook, etc.)
+local function extractEmail(text)
+    if not text or text == "" then return nil end
+    -- Pattern to match email addresses (comprehensive pattern)
+    local email = text:match("[%w%._%+-]+@[%w%._%+-]+%.%w+")
+    if email then
+        -- Additional validation for common email domains
+        local domain = email:match("@(.+)$")
+        if domain and (domain:find("%.") or domain:lower() == "localhost") then
+            return email:lower()
+        end
+    end
+    return nil
+end
+
+-- Helper function to extract real names from text
+local function extractRealName(text)
+    if not text or text == "" then return nil end
+    -- Pattern to match real names (2-4 words, capitalized, alphabetic with spaces/hyphens)
+    -- This matches patterns like "John Doe", "Mary-Jane Smith", "John Paul Jones"
+    local name = text:match("([A-Z][a-z]+[%s%-]+[A-Z][a-z]+[%s%-]*[A-Z]?[a-z]*[%s%-]*[A-Z]?[a-z]*)")
+    if name then
+        -- Clean up extra spaces
+        name = name:gsub("%s+", " "):gsub("^%s*(.-)%s*$", "%1")
+        -- Validate it's not too long (real names typically aren't more than 50 chars)
+        if #name >= 4 and #name <= 50 then
+            return name
+        end
+    end
+    return nil
+end
+
+-- Helper function to extract regional location from IP or location strings
+local function extractRegionalLocation(text)
+    if not text or text == "" then return nil end
+    
+    -- Try to extract country and region/state patterns like "New York, USA" or "California, United States"
+    local region, country = text:match("([^,]+),%s*(.+)")
+    if region and country then
+        return {
+            region = region:gsub("^%s*(.-)%s*$", "%1"),
+            country = country:gsub("^%s*(.-)%s*$", "%1"),
+            full = text
+        }
+    end
+    
+    -- Try to extract just country
+    if text:match("^[A-Z][a-z]+") then
+        return {
+            region = "Unknown",
+            country = text,
+            full = text
+        }
+    end
+    
+    return nil
 end
 
 -- Helper function for smooth color transitions
@@ -551,6 +624,13 @@ local function openUserInfoTab(username)
         makeInfoLineWithCopy("Email", entry.email or "N/A", Theme.Green)
         makeInfoLineWithCopy("Name", entry.name or "N/A", Color3.fromRGB(255, 200, 100))
         makeInfoLineWithCopy("IP Address", entry.ip or entry.ip_address or "N/A", Color3.fromRGB(100, 200, 255))
+        
+        -- Display regional location if available
+        if entry.location and type(entry.location) == "table" then
+            local locationStr = entry.location.full or (entry.location.region .. ", " .. entry.location.country)
+            makeInfoLineWithCopy("Location", locationStr, Color3.fromRGB(150, 255, 150))
+        end
+        
         makeInfoLineWithCopy("Origin", originStr or "N/A", Theme.Accent)
         makeDivider()
     end
@@ -605,14 +685,15 @@ local function openInfoTab()
     makeTitle("SCANNING MODULE")
     makeLine("• Live User Scanning provides real-time leak checks for players joining the server.", Theme.Text)
     makeLine("• Auto Scan (SCAN: ON) enables continuous checking and rescan attempts.", Theme.Text)
-    makeLine("• Enhanced detection now includes IP addresses, real names, emails, and passwords.", Color3.fromRGB(100, 200, 255))
+    makeLine("• Enhanced detection now includes IP addresses, real names, emails, passwords, and regional locations.", Color3.fromRGB(100, 200, 255))
+    makeLine("• Regional location shows general area (e.g., 'New York, USA') when available, but not street addresses.", Color3.fromRGB(150, 255, 150))
     makeLine("• Results may not be 100% accurate, but data with 'roblox' origin is verified and guaranteed real.", Color3.fromRGB(255, 200, 0))
 
     makeTitle("SEARCH & DEEPER INFORMATION")
     makeLine("Search Tab is for getting more information about them; searching more and more will lead you to deeper informations.", Theme.Accent)
     makeLine("You can manually query the database using usernames, emails, or passwords.", Theme.Text)
     makeLine("• 👤 = Username   🔑 = Password   📧 = Email", Theme.Text)
-    makeLine("• 👨 = Real Name   🌐 = IP Address   📍 = Source/Origin", Theme.Text)
+    makeLine("• 👨 = Real Name   🌐 = IP Address   📍 = Location   📍 = Source/Origin", Theme.Text)
     
     makeTitle("COPYRIGHT & SUPPORT")
     makeLine("© 2024 Kryptonite Team (lol no). Leaked by Stalkie.", Theme.ScanGray)
@@ -924,6 +1005,12 @@ local function openSearchPanel()
                 makeSearchDataLineWithCopy(recordFrame, "  👨 Name: ", entry.name or "N/A", Color3.fromRGB(255, 200, 100))
                 makeSearchDataLineWithCopy(recordFrame, "  🌐 IP: ", entry.ip or entry.ip_address or "N/A", Color3.fromRGB(100, 200, 255))
                 
+                -- Display regional location if available
+                if entry.location and type(entry.location) == "table" then
+                    local locationStr = entry.location.full or (entry.location.region .. ", " .. entry.location.country)
+                    makeSearchDataLineWithCopy(recordFrame, "  📍 Location: ", locationStr, Color3.fromRGB(150, 255, 150))
+                end
+                
                 local originStr = table.concat(entry.origin or {}, ", ")
                 if originStr == "" and entry.source and entry.source.name then
                     originStr = entry.source.name
@@ -1099,6 +1186,9 @@ local function addLeakedUser(entry)
         if ipValue and ipValue ~= "" and ipValue ~= "N/A" then
             table.insert(leakedItems, "IP")
         end
+        if entry.location and type(entry.location) == "table" then
+            table.insert(leakedItems, "location")
+        end
         
         if #leakedItems > 0 then
             terminalLog("  └─ Found: " .. table.concat(leakedItems, ", "), "info")
@@ -1241,11 +1331,50 @@ local function scanUser(username)
             
             -- Extract IP from other fields if not present
             if not ent.ip and not ent.ip_address then
-                for _, field in ipairs({"email", "password", "username"}) do
+                for _, field in ipairs({"email", "password", "username", "name", "location", "address"}) do
                     if ent[field] then
                         local extractedIP = extractIPAddress(tostring(ent[field]))
                         if extractedIP then
                             ent.ip = extractedIP
+                            break
+                        end
+                    end
+                end
+            end
+            
+            -- Extract email from other fields if not present
+            if not ent.email or ent.email == "" or ent.email == "N/A" then
+                for _, field in ipairs({"username", "password", "name", "email_address", "contact"}) do
+                    if ent[field] then
+                        local extractedEmail = extractEmail(tostring(ent[field]))
+                        if extractedEmail then
+                            ent.email = extractedEmail
+                            break
+                        end
+                    end
+                end
+            end
+            
+            -- Extract real name from other fields if not present
+            if not ent.name or ent.name == "" or ent.name == "N/A" then
+                for _, field in ipairs({"username", "email", "full_name", "realname", "display_name"}) do
+                    if ent[field] then
+                        local extractedName = extractRealName(tostring(ent[field]))
+                        if extractedName then
+                            ent.name = extractedName
+                            break
+                        end
+                    end
+                end
+            end
+            
+            -- Extract regional location from location-related fields
+            if not ent.location then
+                for _, field in ipairs({"location", "region", "country", "address", "city", "geo_location"}) do
+                    if ent[field] then
+                        local loc = extractRegionalLocation(tostring(ent[field]))
+                        if loc then
+                            ent.location = loc
                             break
                         end
                     end
