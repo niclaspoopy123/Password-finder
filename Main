@@ -274,14 +274,15 @@ LeftTitle.BackgroundTransparency = 1
 LeftTitle.Font = Enum.Font.GothamBold
 LeftTitle.TextSize = 14
 
+-- Scan Progress Label (ENHANCED)
 local ScanProgressLabel = Instance.new("TextLabel", LeftPanel)
-ScanProgressLabel.Size = UDim2.new(1, 0, 0, 20)
+ScanProgressLabel.Size = UDim2.new(1, 0, 0, 22)
 ScanProgressLabel.Position = UDim2.new(0, 0, 0, 26)
 ScanProgressLabel.BackgroundTransparency = 1
-ScanProgressLabel.TextColor3 = Theme.Text
+ScanProgressLabel.TextColor3 = Theme.Green
 ScanProgressLabel.Font = Enum.Font.Gotham
 ScanProgressLabel.TextSize = 13
-ScanProgressLabel.Text = "Checked: 0/0 x0"
+ScanProgressLabel.Text = "📊 Checked: 0/0 x0"
 ScanProgressLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 local LeftScroll = Instance.new("ScrollingFrame", LeftPanel)
@@ -1066,7 +1067,7 @@ local function addLeakedUser(entry)
             openUserInfoTab(entry.username)
         end)
         
-        terminalLog("User leaked: " .. lower, "leak")
+        terminalLog("⚠ LEAK DETECTED: " .. lower, "leak")
     end
 
     table.insert(usersWithLogs[lower], entry)
@@ -1146,7 +1147,7 @@ end
 
 -- HTTP scan (for in-game players)
 local function scanUser(username)
-    terminalLog("Scanning: " .. username, "scan")
+    terminalLog("🔍 Scanning: " .. username, "scan")
     local requestFn = syn and syn.request or http and http.request or request
     if not requestFn then
         terminalLog("HTTP unavailable", "error")
@@ -1183,7 +1184,7 @@ local function scanUser(username)
 
     local leakcheck = parsed.results.leakcheck
     if not leakcheck or leakcheck.found <= 0 then
-        terminalLog(username .. " is clean.", "info")
+        terminalLog("✓ " .. username .. " is clean - no leaks found", "info")
         return
     end
 
@@ -1208,7 +1209,7 @@ local function scanUser(username)
             end
         end
     else
-        terminalLog(username .. " is clean (no usable records found).", "info")
+        terminalLog("✓ " .. username .. " is clean - no usable records found", "info")
     end
 end
 -- Process queue
@@ -1241,7 +1242,7 @@ local function processQueue()
                 scannedThisRound += 1
                 totalScans += 1
 
-                ScanProgressLabel.Text = string.format("Checked: %d/%d x%d", scannedThisRound, totalThisRound, scanRounds)
+                ScanProgressLabel.Text = string.format("📊 Scanned: %d/%d (Round %d)", scannedThisRound, totalThisRound, scanRounds)
 
                 task.wait(SCAN_DELAY)
             end
