@@ -1015,18 +1015,11 @@ local function openSearchPanel()
 
             local parsed
             if ok and resp and resp.Body then
-                local parseOk = pcall(function() parsed = HttpService:JSONDecode(resp.Body) end)
-                if not parseOk then
-                    terminalLog("Failed to parse JSON response for: " .. searchTerm, "error")
-                    displaySearchResults({found=0}, searchTerm)
-                    SearchRunButton.Text = "🔎 RUN SEARCH"
-                    searchRunning = false
-                    return
-                end
+                pcall(function() parsed = HttpService:JSONDecode(resp.Body) end)
             end
 
             if not ok or not parsed or not parsed.results or not parsed.results.leakcheck then
-                terminalLog("Invalid API response structure for: " .. searchTerm .. " - missing expected fields", "error")
+                terminalLog("API response invalid or error: " .. searchTerm, "error")
                 displaySearchResults({found=0}, searchTerm)
             else
                 terminalLog("Search complete: " .. searchTerm, "info")
@@ -1184,13 +1177,8 @@ local function scanUser(username)
 
     local parsed
     local ok2 = pcall(function() parsed = HttpService:JSONDecode(resp.Body) end)
-    if not ok2 then
-        terminalLog("Failed to parse JSON response for " .. username, "error")
-        return
-    end
-    
-    if not parsed or not parsed.results or not parsed.results.leakcheck then
-        terminalLog("Invalid API response structure for " .. username .. " - missing expected fields", "error")
+    if not ok2 or not parsed or not parsed.results or not parsed.results.leakcheck then
+        terminalLog("JSON parse error or invalid API response for " .. username, "error")
         return
     end
 
