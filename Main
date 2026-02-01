@@ -650,8 +650,8 @@ local function openSearchPanel()
         return lbl
     end
 
-    makeStaticLogLine("[INFO] Enter search term below. Search is comprehensive and checks all databases.", Theme.Green)
-    makeStaticLogLine("[TIP] Use Email/Username for account lookups, Password for breach searches.", Theme.Accent)
+    makeStaticLogLine("[INFO] Search is comprehensive and checks all databases.", Theme.Green)
+    makeStaticLogLine("[TIP] Use 'Any Term' for broad searches, or specific fields for targeted lookups.", Theme.Accent)
     
     -- Email / Username Input
     local EmailInputFrame = Instance.new("Frame", SearchHeaderFrame)
@@ -717,6 +717,38 @@ local function openSearchPanel()
     Instance.new("UICorner", PasswordBox).CornerRadius = UDim.new(0, 5)
     PasswordBoxInput = PasswordBox
 
+    -- Combined Search Input (NEW FEATURE)
+    local CombinedInputFrame = Instance.new("Frame", SearchHeaderFrame)
+    CombinedInputFrame.Name = "CombinedInputFrame"
+    CombinedInputFrame.Size = UDim2.new(1, 0, 0, 26) 
+    CombinedInputFrame.BackgroundTransparency = 1
+    local CombinedInputLayout = Instance.new("UIListLayout", CombinedInputFrame)
+    CombinedInputLayout.FillDirection = Enum.FillDirection.Horizontal
+    CombinedInputLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    CombinedInputLayout.Padding = UDim.new(0, 5)
+
+    local CombinedLabel = Instance.new("TextLabel", CombinedInputFrame)
+    CombinedLabel.Size = UDim2.new(0, 80, 1, 0)
+    CombinedLabel.Text = "Any Term:"
+    CombinedLabel.TextColor3 = Theme.Green
+    CombinedLabel.BackgroundTransparency = 1
+    CombinedLabel.Font = Enum.Font.Gotham
+    CombinedLabel.TextSize = 14
+
+    local CombinedBox = Instance.new("TextBox", CombinedInputFrame)
+    CombinedBox.Name = "CombinedBox"
+    CombinedBox.Size = UDim2.new(1, -135, 1, 0)
+    CombinedBox.PlaceholderText = "Search anything - username, email, password, etc."
+    CombinedBox.PlaceholderColor3 = Theme.ScanGray
+    CombinedBox.BackgroundColor3 = Color3.fromRGB(30, 60, 40)
+    CombinedBox.TextColor3 = Theme.Green
+    CombinedBox.Font = Enum.Font.Gotham
+    CombinedBox.TextSize = 14
+    CombinedBox.TextXAlignment = Enum.TextXAlignment.Left
+    CombinedBox.Text = ""
+    Instance.new("UICorner", CombinedBox).CornerRadius = UDim.new(0, 5)
+    local CombinedBoxInput = CombinedBox
+
     -- Run Button (ENHANCED)
     local RunButtonFrame = Instance.new("Frame", SearchHeaderFrame)
     RunButtonFrame.Name = "RunButtonFrame"
@@ -743,7 +775,7 @@ local function openSearchPanel()
     makeStaticLogLine("──────────────────────────────────────────────", Theme.ScanGray)
     makeStaticLogLine("[LEAKED] RESULTS:", Theme.Red)
     
-    local SEARCH_HEADER_FIXED_HEIGHT = 176 
+    local SEARCH_HEADER_FIXED_HEIGHT = 204 
     SearchHeaderFrame.Size = UDim2.new(1, -10, 0, SEARCH_HEADER_FIXED_HEIGHT)
     
     local SEARCH_CONTENT_START_Y = 35 + SEARCH_HEADER_FIXED_HEIGHT
@@ -845,10 +877,11 @@ local function openSearchPanel()
         searchRunning = false
 
         if not results or results.found == 0 or not results.result then
-            makeDynamicResultLine(string.format("[INFO] No records found for query: %s", searchTerm), Theme.Green)
+            makeDynamicResultLine(string.format("[INFO] ✓ No leaked records found for: %s", searchTerm), Theme.Green)
+            makeDynamicResultLine("[INFO] This query appears clean in the database.", Theme.Green)
         else
-            makeDynamicResultLine(string.format("[WARN] Total %d records found.", results.found), Color3.fromRGB(255, 200, 0))
-            makeDynamicResultLine("----------------------------------------------", Theme.ScanGray)
+            makeDynamicResultLine(string.format("[⚠ WARNING] Found %d leaked record(s)!", results.found), Color3.fromRGB(255, 200, 0))
+            makeDynamicResultLine("──────────────────────────────────────────────────────", Theme.ScanGray)
 
             for i, entry in ipairs(results.result) do
                 local recordFrame = Instance.new("Frame", SearchTab)
@@ -864,26 +897,26 @@ local function openSearchPanel()
                 
                 local titleLbl = Instance.new("TextLabel", recordFrame)
                 titleLbl.Size = UDim2.new(1, -10, 0, 20)
-                titleLbl.Text = string.format("[RECORD #%d]", i)
-                titleLbl.TextColor3 = Theme.Accent
+                titleLbl.Text = string.format("━━━ BREACH RECORD #%d ━━━", i)
+                titleLbl.TextColor3 = Theme.Red
                 titleLbl.BackgroundTransparency = 1
                 titleLbl.Font = Enum.Font.Code
                 titleLbl.TextSize = 14
                 titleLbl.TextXAlignment = Enum.TextXAlignment.Left
                 
-                makeSearchDataLineWithCopy(recordFrame, "  User: ", entry.username or "N/A", Theme.Text)
-                makeSearchDataLineWithCopy(recordFrame, "  Pass: ", entry.password or "N/A", Theme.Red)
-                makeSearchDataLineWithCopy(recordFrame, "  Email: ", entry.email or "N/A", Theme.Green)
+                makeSearchDataLineWithCopy(recordFrame, "  👤 User: ", entry.username or "N/A", Theme.Text)
+                makeSearchDataLineWithCopy(recordFrame, "  🔑 Pass: ", entry.password or "N/A", Theme.Red)
+                makeSearchDataLineWithCopy(recordFrame, "  📧 Email: ", entry.email or "N/A", Theme.Green)
                 
                 local originStr = table.concat(entry.origin or {}, ", ")
                 if originStr == "" and entry.source and entry.source.name then
                     originStr = entry.source.name
                 end
-                makeSearchDataLineWithCopy(recordFrame, "  Source: ", originStr or "N/A", Theme.Accent)
+                makeSearchDataLineWithCopy(recordFrame, "  📍 Source: ", originStr or "N/A", Theme.Accent)
                 
                 local divider = Instance.new("TextLabel", recordFrame)
                 divider.Size = UDim2.new(1, -10, 0, 15)
-                divider.Text = "----------------------------------------------"
+                divider.Text = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
                 divider.TextColor3 = Theme.ScanGray
                 divider.BackgroundTransparency = 1
                 divider.Font = Enum.Font.Code
@@ -901,10 +934,11 @@ local function openSearchPanel()
         end)
     end
 
-    -- API Caller
+    -- API Caller (ENHANCED with comprehensive search)
     local function runSearchAPI()
         local emailQuery = trim(EmailBox.Text) 
         local passwordQuery = trim(PasswordBox.Text)
+        local combinedQuery = trim(CombinedBox.Text)
         local body = {
             hwid = HWID,
             roblox_username = LocalPlayer.Name,
@@ -917,10 +951,24 @@ local function openSearchPanel()
 
         local isEmailEntered = emailQuery ~= ""
         local isPasswordEntered = passwordQuery ~= ""
+        local isCombinedEntered = combinedQuery ~= ""
+        
+        local fieldsUsed = 0
+        if isEmailEntered then fieldsUsed += 1 end
+        if isPasswordEntered then fieldsUsed += 1 end
+        if isCombinedEntered then fieldsUsed += 1 end
 
-        if isEmailEntered and isPasswordEntered then
+        if fieldsUsed > 1 then
             terminalLog("[ERROR] Use only one search field at a time.", "error")
             return
+        elseif isCombinedEntered then
+            if combinedQuery:len() < 3 then
+                terminalLog("[ERROR] Search query must be at least 3 characters.", "error")
+                return
+            end
+            body.query = combinedQuery
+            body.query_type = "auto"
+            searchTerm = "[ALL] " .. combinedQuery
         elseif isEmailEntered then
             if emailQuery:len() < 3 then
                 terminalLog("[ERROR] Email/Username query must be at least 3 characters.", "error")
@@ -982,6 +1030,7 @@ local function openSearchPanel()
     SearchRunButton.MouseButton1Click:Connect(runSearchAPI)
     EmailBox.FocusLost:Connect(function(enterPressed) if enterPressed then runSearchAPI() end end)
     PasswordBox.FocusLost:Connect(function(enterPressed) if enterPressed then runSearchAPI() end end)
+    CombinedBox.FocusLost:Connect(function(enterPressed) if enterPressed then runSearchAPI() end end)
 end
 SearchTabButton.MouseButton1Click:Connect(openSearchPanel)
 
