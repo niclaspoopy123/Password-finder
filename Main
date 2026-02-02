@@ -205,7 +205,7 @@ local function makeHttpRequest(url, body)
                 -- Handle server errors (500)
                 elseif resp.StatusCode >= 500 and resp.StatusCode < 600 then
                     if retryCount < MAX_RETRIES - 1 then
-                        terminalLog("⚠️ Server error (" .. resp.StatusCode .. "). Retrying in " .. retryDelay .. "s... (Attempt " .. (retryCount + 1) .. "/" .. (MAX_RETRIES - 1) .. ")", "warn")
+                        terminalLog("⚠️ Server error (" .. resp.StatusCode .. "). Retrying in " .. retryDelay .. "s... (Attempt " .. (retryCount + 1) .. "/" .. MAX_RETRIES .. ")", "warn")
                         task.wait(retryDelay)
                         retryCount = retryCount + 1
                         retryDelay = retryDelay * 2
@@ -229,12 +229,12 @@ local function makeHttpRequest(url, body)
         else
             -- Request failed
             if retryCount < MAX_RETRIES - 1 then
-                terminalLog("⚠️ Request failed. Retrying in " .. retryDelay .. "s... (Attempt " .. (retryCount + 1) .. "/" .. (MAX_RETRIES - 1) .. ")", "warn")
+                terminalLog("⚠️ Request failed. Retrying in " .. retryDelay .. "s... (Attempt " .. (retryCount + 1) .. "/" .. MAX_RETRIES .. ")", "warn")
                 task.wait(retryDelay)
                 retryCount = retryCount + 1
                 retryDelay = retryDelay * 2
             else
-                return false, nil, "Request failed after " .. (MAX_RETRIES - 1) .. " retries"
+                return false, nil, "Request failed after " .. MAX_RETRIES .. " retries"
             end
         end
     end
