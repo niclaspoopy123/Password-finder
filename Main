@@ -50,6 +50,9 @@ local SCAN_DELAY = 0.1
 local totalScans = 0
 local scanRounds = 0
 
+-- Forward declarations for functions used before definition
+local terminalLog, queueUser, processQueue
+
 -- Dragging vars
 local isDragging = false
 local dragStartPos = nil
@@ -455,7 +458,7 @@ InfoButton.MouseLeave:Connect(function()
 end)
 
 --// LOGGING
-local function terminalLog(msg, logType)
+terminalLog = function(msg, logType)
     table.insert(previousLogs, msg)
 
     local prefix = "[LOG]"
@@ -1397,7 +1400,7 @@ local function scanUser(username)
     end
 end
 -- Process queue
-local function processQueue()
+processQueue = function()
     if not isAutoScanEnabled then return end 
     if isScanning then return end
     isScanning = true
@@ -1437,7 +1440,7 @@ local function processQueue()
 end
 
 -- Queue user
-local function queueUser(username, instance)
+queueUser = function(username, instance)
     if not isAutoScanEnabled then return end 
     local lower = username:lower()
     if scannedPlayers[lower] or usersWithLogs[lower] then
