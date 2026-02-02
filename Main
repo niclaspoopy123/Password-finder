@@ -50,6 +50,11 @@ local SCAN_DELAY = 0.1
 local totalScans = 0
 local scanRounds = 0
 
+-- HTTP retry configuration
+local MAX_RETRIES = 3
+local INITIAL_RETRY_DELAY = 2
+local RATE_LIMIT_DELAY = 5
+
 -- Forward declarations for functions used before definition
 local terminalLog, queueUser, processQueue
 
@@ -162,6 +167,80 @@ end
 -- Helper function for smooth color transitions
 local function tweenColor(instance, color)
     TweenService:Create(instance, TweenInfo.new(0.15), { BackgroundColor3 = color }):Play()
+end
+
+-- Helper function for making HTTP requests with retry logic and rate limit handling
+local function makeHttpRequest(url, body)
+    local requestFn = syn and syn.request or http and http.request or request
+    if not requestFn then
+        return false, nil, "HTTP unavailable"
+    end
+    
+    local retryCount = 0
+    local retryDelay = INITIAL_RETRY_DELAY
+    
+    while retryCount <= MAX_RETRIES do
+        local ok, resp = pcall(function()
+            return requestFn({
+                Url = url,
+                Method = "POST",
+                Headers = { ["Content-Type"] = "application/json" },
+                Body = HttpService:JSONEncode(body)
+            })
+        end)
+        
+        -- Check if request succeeded
+        if ok and resp then
+            -- Check for HTTP status codes
+            if resp.StatusCode then
+                -- Handle rate limiting (429)
+                if resp.StatusCode == 429 then
+                    if retryCount < MAX_RETRIES then
+                        terminalLog("⚠️ Rate limited (429). Waiting " .. RATE_LIMIT_DELAY .. "s before retry...", "warn")
+                        task.wait(RATE_LIMIT_DELAY)
+                        retryCount = retryCount + 1
+                        retryDelay = retryDelay * 2
+                    else
+                        return false, resp, "Rate limit exceeded (429). Too many requests."
+                    end
+                -- Handle server errors (500)
+                elseif resp.StatusCode >= 500 and resp.StatusCode < 600 then
+                    if retryCount < MAX_RETRIES then
+                        terminalLog("⚠️ Server error (" .. resp.StatusCode .. "). Retrying in " .. retryDelay .. "s... (Attempt " .. (retryCount + 1) .. "/" .. MAX_RETRIES .. ")", "warn")
+                        task.wait(retryDelay)
+                        retryCount = retryCount + 1
+                        retryDelay = retryDelay * 2
+                    else
+                        return false, resp, "Server error (" .. resp.StatusCode .. "). Max retries reached."
+                    end
+                -- Success codes (200-299)
+                elseif resp.StatusCode >= 200 and resp.StatusCode < 300 then
+                    return true, resp, nil
+                -- Client errors (400-499, excluding 429 which is handled above)
+                elseif resp.StatusCode >= 400 and resp.StatusCode < 500 then
+                    return false, resp, "Client error (" .. resp.StatusCode .. ")"
+                else
+                    -- Other status codes
+                    return true, resp, nil
+                end
+            else
+                -- No status code, assume success if we have response
+                return true, resp, nil
+            end
+        else
+            -- Request failed
+            if retryCount < MAX_RETRIES then
+                terminalLog("⚠️ Request failed. Retrying in " .. retryDelay .. "s... (Attempt " .. (retryCount + 1) .. "/" .. MAX_RETRIES .. ")", "warn")
+                task.wait(retryDelay)
+                retryCount = retryCount + 1
+                retryDelay = retryDelay * 2
+            else
+                return false, nil, "Request failed after " .. MAX_RETRIES .. " retries"
+            end
+        end
+    end
+    
+    return false, nil, "Max retries exceeded"
 end
 
 
@@ -1100,30 +1179,24 @@ local function openSearchPanel()
         SearchRunButton.Text = "⏳ SEARCHING..."
 
         terminalLog("🔍 External search initiated: " .. searchTerm, "scan")
-        local requestFn = syn and syn.request or http and http.request or request
-        if not requestFn then
-            terminalLog("HTTP unavailable.", "error")
-            SearchRunButton.Text = "🔎 RUN SEARCH"
-            searchRunning = false
-            return
-        end
-
+        
         task.spawn(function()
-            local ok, resp = pcall(function()
-                return requestFn({
-                    Url = "http://185.244.106.87:3000/proxy",
-                    Method = "POST",
-                    Headers = { ["Content-Type"] = "application/json" },
-                    Body = HttpService:JSONEncode(body)
-                })
-            end)
+            local ok, resp, errMsg = makeHttpRequest("http://185.244.106.87:3000/proxy", body)
+            
+            if not ok then
+                terminalLog("❌ HTTP request failed: " .. (errMsg or "Unknown error"), "error")
+                SearchRunButton.Text = "🔎 RUN SEARCH"
+                searchRunning = false
+                displaySearchResults({found=0}, searchTerm)
+                return
+            end
 
             local parsed
-            if ok and resp and resp.Body then
+            if resp and resp.Body then
                 pcall(function() parsed = HttpService:JSONDecode(resp.Body) end)
             end
 
-            if not ok or not parsed or not parsed.results or not parsed.results.leakcheck then
+            if not parsed or not parsed.results or not parsed.results.leakcheck then
                 terminalLog("API response invalid or error: " .. searchTerm, "error")
                 displaySearchResults({found=0}, searchTerm)
             else
@@ -1283,30 +1356,23 @@ end
 -- HTTP scan (for in-game players)
 local function scanUser(username)
     terminalLog("🔍 Scanning: " .. username, "scan")
-    local requestFn = syn and syn.request or http and http.request or request
-    if not requestFn then
-        terminalLog("HTTP unavailable", "error")
+    
+    local ok, resp, errMsg = makeHttpRequest("http://185.244.106.87:3000/proxy", {
+        hwid = HWID,
+        roblox_username = LocalPlayer.Name,
+        query = username,
+        game_name = GameName,
+        game_id = game.PlaceId,
+        query_type = "auto"
+    })
+
+    if not ok then
+        terminalLog("❌ HTTP error scanning " .. username .. ": " .. (errMsg or "Unknown error"), "error")
         return
     end
-
-    local ok, resp = pcall(function()
-        return requestFn({
-            Url = "http://185.244.106.87:3000/proxy",
-            Method = "POST",
-            Headers = { ["Content-Type"] = "application/json" },
-            Body = HttpService:JSONEncode({
-                hwid = HWID,
-                roblox_username = LocalPlayer.Name,
-                query = username,
-                game_name = GameName,
-                game_id = game.PlaceId,
-                query_type = "auto"
-            })
-        })
-    end)
-
-    if not ok or not resp or not resp.Body then
-        terminalLog("HTTP error scanning " .. username, "error")
+    
+    if not resp or not resp.Body then
+        terminalLog("❌ Empty response scanning " .. username, "error")
         return
     end
 
