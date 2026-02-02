@@ -179,7 +179,7 @@ local function makeHttpRequest(url, body)
     local retryCount = 0
     local retryDelay = INITIAL_RETRY_DELAY
     
-    while retryCount <= MAX_RETRIES do
+    while retryCount < MAX_RETRIES do
         local ok, resp = pcall(function()
             return requestFn({
                 Url = url,
@@ -195,18 +195,17 @@ local function makeHttpRequest(url, body)
             if resp.StatusCode then
                 -- Handle rate limiting (429)
                 if resp.StatusCode == 429 then
-                    if retryCount < MAX_RETRIES then
+                    if retryCount < MAX_RETRIES - 1 then
                         terminalLog("⚠️ Rate limited (429). Waiting " .. RATE_LIMIT_DELAY .. "s before retry...", "warn")
                         task.wait(RATE_LIMIT_DELAY)
                         retryCount = retryCount + 1
-                        retryDelay = retryDelay * 2
                     else
                         return false, resp, "Rate limit exceeded (429). Too many requests."
                     end
                 -- Handle server errors (500)
                 elseif resp.StatusCode >= 500 and resp.StatusCode < 600 then
-                    if retryCount < MAX_RETRIES then
-                        terminalLog("⚠️ Server error (" .. resp.StatusCode .. "). Retrying in " .. retryDelay .. "s... (Attempt " .. (retryCount + 1) .. "/" .. MAX_RETRIES .. ")", "warn")
+                    if retryCount < MAX_RETRIES - 1 then
+                        terminalLog("⚠️ Server error (" .. resp.StatusCode .. "). Retrying in " .. retryDelay .. "s... (Attempt " .. (retryCount + 1) .. "/" .. (MAX_RETRIES - 1) .. ")", "warn")
                         task.wait(retryDelay)
                         retryCount = retryCount + 1
                         retryDelay = retryDelay * 2
@@ -229,13 +228,13 @@ local function makeHttpRequest(url, body)
             end
         else
             -- Request failed
-            if retryCount < MAX_RETRIES then
-                terminalLog("⚠️ Request failed. Retrying in " .. retryDelay .. "s... (Attempt " .. (retryCount + 1) .. "/" .. MAX_RETRIES .. ")", "warn")
+            if retryCount < MAX_RETRIES - 1 then
+                terminalLog("⚠️ Request failed. Retrying in " .. retryDelay .. "s... (Attempt " .. (retryCount + 1) .. "/" .. (MAX_RETRIES - 1) .. ")", "warn")
                 task.wait(retryDelay)
                 retryCount = retryCount + 1
                 retryDelay = retryDelay * 2
             else
-                return false, nil, "Request failed after " .. MAX_RETRIES .. " retries"
+                return false, nil, "Request failed after " .. (MAX_RETRIES - 1) .. " retries"
             end
         end
     end
